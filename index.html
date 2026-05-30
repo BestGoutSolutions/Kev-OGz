@@ -316,84 +316,7 @@
 
   <div class="section-label">— The Menu —</div>
 
-  <div class="menu-grid">
-
-    <div class="menu-card">
-      <div class="card-top">
-        <div>
-          <div class="card-the">The</div>
-          <div class="card-name chalk-scratch">Traditional</div>
-        </div>
-        <div class="card-price">$10</div>
-      </div>
-      <div class="card-desc">A classic done right</div>
-    </div>
-
-    <div class="menu-card">
-      <div class="card-top">
-        <div>
-          <div class="card-the">The</div>
-          <div class="card-name chalk-scratch">Slaw Dog</div>
-        </div>
-        <div class="card-price">$12</div>
-      </div>
-      <div class="card-desc">Sweet BBQ Sauce, Cole Slaw</div>
-    </div>
-
-    <div class="menu-card">
-      <div class="card-top">
-        <div>
-          <div class="card-the">The</div>
-          <div class="card-name chalk-scratch">Chili Dog</div>
-        </div>
-        <div class="card-price">$13</div>
-      </div>
-      <div class="card-desc">With Cheese</div>
-    </div>
-
-    <div class="menu-card">
-      <div class="card-top">
-        <div>
-          <div class="card-the">The</div>
-          <div class="card-name chalk-scratch">Bop Dog</div>
-        </div>
-        <div class="card-price">$13</div>
-      </div>
-      <div class="card-desc">Bacon, Onions, Bell Peppers</div>
-    </div>
-
-    <div class="menu-card">
-      <div class="card-top">
-        <div>
-          <div class="card-the">The</div>
-          <div class="card-name chalk-scratch">Pastrami Dog</div>
-        </div>
-        <div class="card-price">$15</div>
-      </div>
-      <div class="card-desc">w/ Mustard &amp; Pickle</div>
-    </div>
-
-    <div class="menu-card">
-      <div class="card-top">
-        <div>
-          <div class="card-the">The</div>
-          <div class="card-name chalk-scratch">Cowboy</div>
-        </div>
-        <div class="card-price">$15</div>
-      </div>
-      <div class="card-desc">BBQ, Chili Dog, with Coleslaw</div>
-    </div>
-
-    <div class="menu-card">
-      <div class="card-top">
-        <div>
-          <div class="card-the">The</div>
-          <div class="card-name chalk-scratch">Hatch Dog</div>
-        </div>
-        <div class="card-price">$15</div>
-      </div>
-      <div class="card-desc">Creamy Hatch Green Chili Chicken</div>
-    </div>
+  <div class="menu-grid" id="menuGrid">
 
   </div>
 
@@ -404,6 +327,56 @@
 </div>
 
 <script>
+  const MENU_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTY6bdMP5eDC5gEXr_tP65yxdH-pwF02LciahkCybsT0kbyfjyLfoZrVHz764rrttJKP2024BUoq68p/pub?gid=0&single=true&output=csv';
+
+  function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+    return lines.slice(1).map(line => {
+      const values = [];
+      let current = '';
+      let inQuotes = false;
+      for (let c of line) {
+        if (c === '"') { inQuotes = !inQuotes; }
+        else if (c === ',' && !inQuotes) { values.push(current.trim()); current = ''; }
+        else { current += c; }
+      }
+      values.push(current.trim());
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = (values[i] || '').replace(/^"|"$/g, ''));
+      return obj;
+    });
+  }
+
+  function buildMenuCards(items) {
+    const grid = document.getElementById('menuGrid');
+    grid.innerHTML = '';
+    items.forEach(item => {
+      if (!item.name) return;
+      const card = document.createElement('div');
+      card.className = 'menu-card';
+      const prefix = item.prefix ? `<div class="card-the">${item.prefix}</div>` : '';
+      const desc = item.description ? `<div class="card-desc">${item.description}</div>` : '';
+      card.innerHTML = `
+        <div class="card-top">
+          <div>
+            ${prefix}
+            <div class="card-name chalk-scratch">${item.name}</div>
+          </div>
+          <div class="card-price">${item.price ? '$' + item.price : ''}</div>
+        </div>
+        ${desc}
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  fetch(MENU_CSV)
+    .then(r => r.text())
+    .then(text => buildMenuCards(parseCSV(text)))
+    .catch(() => {
+      document.getElementById('menuGrid').innerHTML = '<p style="color:#f0ece0;text-align:center;font-family:\'Permanent Marker\',cursive;">Menu unavailable — check back soon.</p>';
+    });
   const HOURS = {
     0: null, // Sun
     1: { open: '11:00', close: '17:00' }, // Mon -- wait, corrected: Mon closed
